@@ -17,8 +17,9 @@ export default function Home() {
 
   const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL;
   const REST_BASE_URL = process.env.NEXT_PUBLIC_REST_URL;
+  const WS_TOKEN = process.env.NEXT_PUBLIC_WS_TOKEN
 
-  const WS_URL = `${WS_BASE_URL}/${environment}`;
+  const WS_URL = `${WS_BASE_URL}/${environment}?token=${WS_TOKEN}`;
 
   useEffect(() => {
     if (!WS_BASE_URL) return;
