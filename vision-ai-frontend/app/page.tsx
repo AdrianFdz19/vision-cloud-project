@@ -1,10 +1,9 @@
-// src/app/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 
 export default function Home() {
-  const [environment] = useState('prod'); // Mantener fijo o dinámico según tu flujo
+  const [environment] = useState('prod');
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
@@ -27,32 +26,32 @@ export default function Home() {
     const ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
-      console.log('✅ Conectado al WebSocket');
+      console.log('✅ Connected to WebSocket');
       setIsConnected(true);
       ws.send(JSON.stringify({ action: 'get-id' }));
     };
 
-    // ✅ UNIFICADO: Un solo manejador de mensajes para evitar sobrescritura
+    // Unified message handler
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Mensaje recibido:", data);
+      console.log("Message received:", data);
 
-      // Agrega todos los eventos crudos al feed de la consola
+      // Append raw events to the console feed
       setMessages((prev) => [...prev, event.data]);
 
       if (data.type === "INIT") {
-        console.log("🚀 Connection ID recibido:", data.connectionId);
+        console.log("🚀 Connection ID received:", data.connectionId);
         setConnectionId(data.connectionId);
-      } 
-      
+      }
+
       if (data.message === "Análisis completado") {
         setLabels(data.data);
-        setIsAnalyzing(false); // 🛑 Apagamos el spinner cuando AWS responde
+        setIsAnalyzing(false); // Disable spinner when AWS responds
       }
     };
 
     ws.onclose = () => {
-      console.log('❌ Desconectado');
+      console.log('❌ Disconnected');
       setIsConnected(false);
     };
 
@@ -67,29 +66,29 @@ export default function Home() {
     };
   }, [WS_URL, WS_BASE_URL]);
 
-  // 1. Manejador de selección con guardarraíles
+  // File selection handler with architecture guardrails
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 🛡️ Guardarraíles de presupuesto
+    // Budget Guardrails
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo supera el límite de 5MB.");
+      alert("File size exceeds the 5MB limit.");
       return;
     }
 
     const allowedTypes = ["image/jpeg", "image/png"];
     if (!allowedTypes.includes(file.type)) {
-      alert("Formato inválido. Solo se admite JPG y PNG.");
+      alert("Invalid format. Only JPG and PNG are supported.");
       return;
     }
 
     setSelectedImage(file);
     setPreviewUrl(URL.createObjectURL(file));
-    setLabels(""); // Resetear resultados anteriores
+    setLabels(""); // Reset previous results
   };
 
-  // 2. Flujo completo de subida y análisis
+  // Complete upload and analysis pipeline
   const uploadAndAnalyze = async () => {
     if (!selectedImage || !connectionId) return;
 
@@ -97,15 +96,15 @@ export default function Home() {
       setIsAnalyzing(true);
       setLabels("");
 
-      console.log('1. Solicitando Pre-signed URL...');
+      console.log('1. Requesting Pre-signed URL...');
       const apiRes = await fetch(
         `${REST_BASE_URL}/${environment}/upload-url?connectionId=${connectionId}&env=${environment}`
       );
-      
-      if (!apiRes.ok) throw new Error("Error obteniendo la URL firmada");
+
+      if (!apiRes.ok) throw new Error("Error fetching pre-signed URL");
       const { uploadUrl } = await apiRes.json();
 
-      console.log('2. Subiendo directamente a S3...');
+      console.log('2. Uploading directly to S3...');
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         body: selectedImage,
@@ -114,21 +113,20 @@ export default function Home() {
         },
       });
 
-      if (!uploadRes.ok) throw new Error("Error en la subida a S3");
-      console.log('✅ Archivo en S3. Esperando respuesta de Rekognition vía WebSocket...');
+      if (!uploadRes.ok) throw new Error("S3 payload upload failed");
+      console.log('✅ Payload arrived at S3. Awaiting Rekognition stream via WebSocket...');
 
     } catch (error) {
-      console.error("🚨 Fallo en el flujo:", error);
-      alert("Ocurrió un error al procesar la imagen.");
+      console.error("🚨 Execution pipeline failed:", error);
+      alert("An error occurred while processing the image.");
       setIsAnalyzing(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Contenedor con padding consistente de 1400px */}
       <div className="max-w-[1400px] mx-auto px-6 py-10">
-
+        {/* 1400px Max-Width Grid Wrapper */}
         <header className="mb-12">
           <div className="flex items-center gap-3">
             <h1 className="text-4xl font-bold tracking-tight">Vision AI</h1>
@@ -140,11 +138,11 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* Panel Izquierdo: Controles */}
+
+          {/* Left Panel: Control Pipeline */}
           <section className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Configuración de Carga</h2>
+              <h2 className="text-xl font-semibold">Upload Configuration</h2>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Connection ID (WebSocket)</label>
@@ -152,13 +150,13 @@ export default function Home() {
                   type="text"
                   value={connectionId}
                   readOnly
-                  placeholder="Esperando identificador de AWS..."
+                  placeholder="Awaiting identifier response from AWS..."
                   className="w-full p-2 bg-slate-100 border border-slate-300 rounded-md outline-none text-slate-500 font-mono text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Seleccionar Imagen</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Select Image</label>
                 <input
                   type="file"
                   accept="image/jpeg, image/png"
@@ -174,15 +172,15 @@ export default function Home() {
                 />
               </div>
 
-              {/* Preview Local de la Imagen */}
+              {/* Local Media Viewport Preview */}
               {previewUrl && (
                 <div className="mt-4 border border-slate-200 rounded-lg p-2 bg-slate-50 max-w-xs mx-auto">
-                  <p className="text-xs font-medium text-slate-500 mb-1 text-center">Vista previa</p>
+                  <p className="text-xs font-medium text-slate-500 mb-1 text-center">Image Preview</p>
                   <img src={previewUrl} alt="Preview" className="rounded-md max-h-48 object-cover mx-auto" />
                 </div>
               )}
 
-              {/* Botón de Enviar a AWS */}
+              {/* Ingestion Stream Dispatcher */}
               <button
                 onClick={uploadAndAnalyze}
                 disabled={!selectedImage || isAnalyzing}
@@ -191,29 +189,29 @@ export default function Home() {
                 {isAnalyzing ? (
                   <>
                     <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
-                    Analizando con Rekognition...
+                    Analyzing with Rekognition...
                   </>
                 ) : (
-                  "Procesar Imagen"
+                  "Process Image"
                 )}
               </button>
             </div>
 
-            {/* Resultado de las Etiquetas */}
+            {/* Inference Labels Result Display */}
             {labels && (
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-1">Labels Detectados:</h3>
+                <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-1">Detected Labels:</h3>
                 <p className="text-slate-700 text-sm font-medium">{labels}</p>
               </div>
             )}
           </section>
 
-          {/* Panel Derecho: Consola Real-time Feed */}
+          {/* Right Panel: Real-time Feed Terminal Console */}
           <section className="bg-slate-900 p-8 rounded-xl shadow-inner min-h-[400px] flex flex-col🎁">
             <h2 className="text-xl font-semibold mb-4 text-emerald-400 font-mono tracking-widest uppercase text-xs">Real-time Feed</h2>
             <div className="flex-1 font-mono text-xs overflow-y-auto space-y-2 max-h-[450px]">
               {messages.length === 0 ? (
-                <p className="text-slate-500 italic">Esperando eventos de AWS...</p>
+                <p className="text-slate-500 italic">Awaiting AWS events...</p>
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} className="text-emerald-300 border-l-2 border-emerald-500 pl-3 py-1 bg-emerald-500/5 break-all">
